@@ -1,0 +1,65 @@
+name: Deploy site
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: read-all|write-all
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18
+      - name: Install Yarn
+        run: npm i yarn -g
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build project
+        run: yarn build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: ./dist
+      - name: Upload src
+        uses: actions/upload-artifact@v
+        with:
+          name: src
+          path: ./src
+      
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+          path: ./dist
+      - name: Download src artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: src
+          path: ./src
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
